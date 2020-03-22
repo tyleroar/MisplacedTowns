@@ -58,6 +58,12 @@ class Deck:
   def revealAll(self):
     for j in self.cards:
       j.show()
+  def revealSorted(self):
+    for number in range(1,11,1):
+      for color in range (1,6):
+        card = Card(Color(color).value,number)
+        if self.hasCard(card):
+          card.show()
   def shuffle(self):
     for i in range(len(self.cards)-1,0,-1):
       r = random.randint(0,i)
@@ -92,7 +98,7 @@ def printGameBoard(communityDecks):
       else:
         print ''.ljust(7,' '),
 
-    print "\n"
+    print ""
   for color in range(1,6):
     card = Card(Color(color).value,number)
     colorname = Color(color).name
@@ -106,6 +112,7 @@ def printGameBoard(communityDecks):
       value = 'HS'
     output=colorname[0]+str(value)
     print output.ljust(7,' '),
+  print "" #just need a newline
  # deck = communityDecks['DISCARD']
  # if len(deck)>0:
  #   card = deck.cards[len(deck.cards)-1]
@@ -185,8 +192,11 @@ def getCardValue(playerHand,color):
   value = None
   print "Enter the card value to play"
   while value == None:
-    value = int(raw_input())
-    if value >10 or value < -1:
+    try:
+      value = int(raw_input())
+    except:
+      value = 0
+    if value >10 or value < 1:
       print "get card invalid selection, try again"
   card = Card(color.value,value)
   return card
@@ -195,7 +205,7 @@ def getCardValue(playerHand,color):
 
 #this hould prompt player where they want to draw form, add it to their hand and remove it from wherever it is at
 
-def getDraw(playerName,playerHand,communityDeck,lastColor):
+def getDraw(playerName,playerHand,communityDeck,lastColor,discard):
   color = None
   print "Enter the color you want to draw from or D to draw"
   while color == None:
@@ -210,7 +220,7 @@ def getDraw(playerName,playerHand,communityDeck,lastColor):
       card = communityDeck['mainDeck'].cards.pop()
       playerHand.insertCard(card)
     else:
-      if color == lastColor:
+      if color == lastColor and discard==True:
         print "you can't pick up from the pile you just discarded to!"
         color = None
         continue
@@ -226,6 +236,16 @@ def getDraw(playerName,playerHand,communityDeck,lastColor):
     if color == None:
       print "Invalid, selection, try again"
   
+def isValidMove(card,playerHand,communityDeck,playerName,discard):
+  #check if the card 
+  if discard == True:
+    return playerHand.hasCard(card)
+  if not playerHand.hasCard(card):
+    return False
+  for x in communityDeck[playerName].cards:
+    if x.color == card.color and x.value>card.value:
+      return False
+  return True
 def getMove(playerName,playerHand,communityDeck):
   print playerName
   color = getMoveType()
@@ -235,13 +255,16 @@ def getMove(playerName,playerHand,communityDeck):
     color=getMoveColor()
 #  if color == Color.DISCARD:
   card = getCardValue(playerHand,color)
-  while not playerHand.hasCard(card):
-    print "You do not have that card, please try again"
+  while not isValidMove(card,playerHand,communityDeck,playerName,discard):
+    if not playerHand.hasCard(card):
+      print "You don't have that card"
+    else
+      print "That card is not ascending, please try again"
     color = getMoveType()
     discard = False
     if color == Color.DISCARD:
       discard = True
-   #   color = getMoveColor()
+      color = getMoveColor()
     card = getCardValue(playerHand,color)
   if discard==True:
     playerHand.deleteCard(card)
@@ -250,9 +273,45 @@ def getMove(playerName,playerHand,communityDeck):
     print "playing card: {}".format(card)
     communityDeck[playerName].insertCard(card)
     playerHand.deleteCard(card)
-  getDraw(playerName,playerHand,communityDeck,color)
+  getDraw(playerName,playerHand,communityDeck,color,discard)
+
+def scoreDeck(deck):
+  scores = dict()
+  for color in range (1,6):
+    scores[Color(color).name] = 0
+    multiplier=1
+    total=0
+    cardcount=0
+    for number in range(1,11,1):
+      card = Card(Color(color).value,number)
+      if number == 1:
+        multiplier+=deck.countCard(card)
+        if cardcount==0:
+          total=-20
+          cardcount+=1
+      else:
+        if deck.hasCard(card):
+          if cardcount==0:
+            cardcount+=1
+            total=-20
+          total+=card.value
+      scores[Color(color).name] = total*multiplier
+
+
+  totalScore = 0
+  for color in range (1,6):
+    totalScore+=scores[color]
+  print scores
+  return totalScore
+
 def printGameSummary(deck):
   pass
+  P1Score=scoreDeck(deck['P1'])
+  P2Score = scoreDeck(deck['P2'])
+
+  #P1Deck = deck['P1']
+  #P2Deck = deck['P2']
+
   #need to score both players hands
  # deck['P1']
  # deck['P2']
@@ -262,26 +321,29 @@ def gameOver(deck):
 def main():
 
   P1Hand = Deck()
+  scoreDeck(P1Hand)
   P2Hand = Deck()
   community = buildCommunityDeck()
   for i in range(0,8):
     P1Hand.insertCard(community['mainDeck'].cards.pop())
     P2Hand.insertCard(community['mainDeck'].cards.pop())
   print "Player 1 cards"
-  P1Hand.revealAll()
+  P1Hand.revealSorted()
   print "player 2 cards"
-  P2Hand.revealAll()
+  P2Hand.revealSorted()
   print "Remaining:"
  # mainDeck.revealAll()
   b = Card(Color.RED.value,10)
   while True:
+    print "Cards remaining: {}".format(len(community['mainDeck']))
     print "Player 1 cards"
-    P1Hand.revealAll()
+    P1Hand.revealSorted()
     printGameBoard(community)
     getMove("P1",P1Hand,community)
     if gameOver(community['mainDeck']):
       break
-    P2Hand.revealAll()
+    print "Cards remaining: {}".format(len(community['mainDeck']))
+    P2Hand.revealSorted()
     printGameBoard(community)
     getMove("P2",P2Hand,community)
     if gameOver(community['mainDeck']):
