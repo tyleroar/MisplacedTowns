@@ -2,6 +2,7 @@
 from enum import Enum
 import sys
 import random
+import ai
 class Color(Enum):
   DISCARD = 0
   RED = 1
@@ -33,10 +34,14 @@ class Card:
   def __ne__(self, other):
     """Overrides the default implementation"""
     return not self.__eq__(other)
+
 class Deck:
   def __init__(self):
     self.cards = []
    # self.build()
+  
+  def sortDeck(self):
+    self.cards.sort()
   def build(self):
     for color in range(1,6):
       for value in range(1,11):  #we're using 1 as the special handshake value
@@ -55,12 +60,20 @@ class Deck:
         if val == card:
           self.cards.remove(val)
           break
+ #get the sum of the values for a specific color (count HS as 0)
+  def getColorSum(self,color):
+    thesum = 0
+    for x in self.cards:
+      if x.color == color:
+        if x.value != 1:
+          thesum+=x.value
+    return thesum
   def revealAll(self):
     for j in self.cards:
       j.show()
   def revealSorted(self):
-    for number in range(1,11,1):
-      for color in range (1,6):
+    for color in range (1,6):
+      for number in range(1,11,1):
         card = Card(Color(color).value,number)
         if self.hasCard(card):
           card.show()
@@ -246,26 +259,51 @@ def isValidMove(card,playerHand,communityDeck,playerName,discard):
     if x.color == card.color and x.value>card.value:
       return False
   return True
-def getMove(playerName,playerHand,communityDeck):
-  print playerName
-  color = getMoveType()
+def  getFullMove(playerName,playerHand,communityDeck):
+  validMove= False
   discard = False
-  if color == Color.DISCARD:
-    discard = True
-    color=getMoveColor()
-#  if color == Color.DISCARD:
-  card = getCardValue(playerHand,color)
-  while not isValidMove(card,playerHand,communityDeck,playerName,discard):
-    if not playerHand.hasCard(card):
-      print "You don't have that card"
-    else
-      print "That card is not ascending, please try again"
-    color = getMoveType()
-    discard = False
-    if color == Color.DISCARD:
-      discard = True
-      color = getMoveColor()
-    card = getCardValue(playerHand,color)
+  while not validMove:
+    fullmove = raw_input()
+    if len(fullmove)<2:
+      print "Please enter a valid move (move text too short)"
+      continue
+    else:
+      if fullmove[0] == "D":
+        discard = True
+        row = fullmove[1]
+        color = mapinputtocolor(row)
+        if color == None or color == Color(0):
+          print "Invalid color selection, try again"
+          continue
+        else:
+          try:
+            value = int(fullmove[2:])
+          except:
+            print "couldn't parse out value non-int encountered"
+            continue
+        validMove=True
+      else:
+        discard= False
+        row = fullmove[0]
+        color = mapinputtocolor(row)
+        if color == None or color == Color(0):
+          print "invalid color section try again"
+          continue
+        else:
+          try:
+            value = int(fullmove[1:])
+          except:
+            print "coudln't parse out value, non-int encountered"
+            continue
+          validMove=True
+    #at this point we should have discard,color and int
+      card = Card(color.value,value)
+    if not isValidMove(card,playerHand,communityDeck,playerName,discard):
+      validMove=False
+      if not playerHand.hasCard(card):
+        print "You don't have that card"
+      else:
+        print "That card is not ascending, please try again"
   if discard==True:
     playerHand.deleteCard(card)
     communityDeck[color.name].insertCard(card)
@@ -273,7 +311,20 @@ def getMove(playerName,playerHand,communityDeck):
     print "playing card: {}".format(card)
     communityDeck[playerName].insertCard(card)
     playerHand.deleteCard(card)
+  return color,discard
+def getMove(playerName,playerHand,communityDeck):
+  print "{} it is your move.  Enter the color to play on and the card value, or enter D and the card color and value to play".format(playerName)
+  color,discard=getFullMove(playerName,playerHand,communityDeck)
   getDraw(playerName,playerHand,communityDeck,color,discard)
+  return
+ 
+ #check all the colors in a deck and determine the highest sum
+def getBestColor(deck):
+  return 0
+  #for color in range(1,6):
+
+
+  
 
 def scoreDeck(deck):
   scores = dict()
@@ -286,9 +337,10 @@ def scoreDeck(deck):
       card = Card(Color(color).value,number)
       if number == 1:
         multiplier+=deck.countCard(card)
-        if cardcount==0:
-          total=-20
-          cardcount+=1
+        if deck.countCard(card)>0:
+          if cardcount==0:
+            total=-20
+            cardcount+=deck.countCard(card)
       else:
         if deck.hasCard(card):
           if cardcount==0:
@@ -296,11 +348,11 @@ def scoreDeck(deck):
             total=-20
           total+=card.value
       scores[Color(color).name] = total*multiplier
-
-
+      if cardcount>=8:
+        scores[Color(color).name] +=20 #20 point bonus for having 8 cards in an expedition
   totalScore = 0
   for color in range (1,6):
-    totalScore+=scores[color]
+    totalScore+=scores[Color(color).name]
   print scores
   return totalScore
 
@@ -308,7 +360,16 @@ def printGameSummary(deck):
   pass
   P1Score=scoreDeck(deck['P1'])
   P2Score = scoreDeck(deck['P2'])
+  print P1Score
+  print P2Score
+  if P1Score>P2Score:
+    print "Player 1 won!!"
+  elif P1Score<P2Score:
+    print "Player 2 won!!"
+  else:
+    print "It's a tie!"
 
+  return P1Score,P2Score
   #P1Deck = deck['P1']
   #P2Deck = deck['P2']
 
@@ -318,36 +379,58 @@ def printGameSummary(deck):
 #game is over when 0 cards left in the main deck
 def gameOver(deck):
   return len(deck)==0
-def main():
 
+def simulateAGame():
   P1Hand = Deck()
-  scoreDeck(P1Hand)
   P2Hand = Deck()
   community = buildCommunityDeck()
   for i in range(0,8):
     P1Hand.insertCard(community['mainDeck'].cards.pop())
     P2Hand.insertCard(community['mainDeck'].cards.pop())
-  print "Player 1 cards"
-  P1Hand.revealSorted()
-  print "player 2 cards"
-  P2Hand.revealSorted()
+#  print "player 2 cards"
+#  P2Hand.revealSorted()
   print "Remaining:"
  # mainDeck.revealAll()
   b = Card(Color.RED.value,10)
+  computer = ai.DumbAI()
+  computer2=ai.AlwaysDraw()
   while True:
+    if len(P2Hand)<8:
+      raise Exception("P2 doesn't have 8 cards")
+    if len(P1Hand)<8:
+      raise Exception("P1 doesn't have 8 cards")
     print "Cards remaining: {}".format(len(community['mainDeck']))
     print "Player 1 cards"
     P1Hand.revealSorted()
     printGameBoard(community)
-    getMove("P1",P1Hand,community)
+#    getMove("P1",P1Hand,community)
+    computer.computerMakeMove("P1",P1Hand,community)
     if gameOver(community['mainDeck']):
       break
     print "Cards remaining: {}".format(len(community['mainDeck']))
-    P2Hand.revealSorted()
+   # P2Hand.revealSorted()
     printGameBoard(community)
-    getMove("P2",P2Hand,community)
+   # getMove("P2",P2Hand,community)
+    computer2.computerMakeMove("P2",P2Hand,community)
     if gameOver(community['mainDeck']):
       break
-  printGameSummary(community)
+  return printGameSummary(community)
+
+def main():
+  P1Wins = 0
+  P2Wins = 0
+  P1CumulativeScore = 0
+  P2CumulativeScore = 0
+  for i in range(0,100):
+    P1Score,P2Score = simulateAGame()
+    P1CumulativeScore+=P1Score
+    P2CumulativeScore+=P2Score
+    if P1Score>P2Score:
+      P1Wins+=1
+    elif P2Score>P1Score:
+      P2Wins+=1
+    print  "P1 is dumb P2 is always draw!"
+    print "After 100 rounds, P1Wins: {} P2Wins: {}\nP1 Total:{}, P2 Total: {}".format(P1Wins,P2Wins,P1CumulativeScore,P2CumulativeScore)
+
 if __name__=="__main__":
   main()
