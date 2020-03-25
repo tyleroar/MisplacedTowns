@@ -1,0 +1,137 @@
+Strategy:
+
+
+Deciding which card to discard:
+- best case is if you have a color that you won't play (due to not having a high value of it/your opponent having played high value already) and isn't of value to your opponent (i.e. it is lower than the highest value they've played in that category).
+- if you can't do that, discard whichever card has the least value to you
+
+- when to play vs when to discard/when to start an expedition
+ -- will have to be based on the # of cards remaining in the deck
+  - needs to keep in mind how long it takes to play the cards, and possible points remaining for that category
+
+
+https://boardgamegeek.com/thread/5899/early-game-strategy
+I've put a lot of thought into this while developing an AI to play the game. While these numbers shift to be higher later in the game as fewer cards are available and your opponent plays cards, the general rule of thumb for playing investment cards at the beginning of the game is this: If you have 10 points (sum of number cards plus top card of discard) of a color, you should play one handshake, if you have 15, you should play 2 handshakes, and if you have 20, you should play all 3. If your opponent has played a handshake or a single low card in that color, I would add 2 to those thresholds and discard a third handshake if you have it.
+
+Playing another color instead of the color with the handshakes really depends on how many points you have in a color, how low they are, and whether they are sequential. If you have 2-3+ cards that are sequential, that can be very valuable to buy you time to draw more cards - these are what I call "guaranteed plays". Guaranteed plays are especially valuable if they are low number cards, since you&#039;ll have an opportunity to draw higher value cards to make the suit good. In general, however, I would never open a suit unless I had at least 10 points in your hand. If you don&#039;t have that much in any suit, I&#039;d discard a low card (preferably under what your opponent has played) and try to draw a better card.
+
+I definitely would not characterize the early game as purely driven by luck, however. Your play strategy in all situations has a huge impact on how well you'll do in the game. Sometimes it is just a matter of finding a better strategy to cope with the random elements
+
+
+
+https://boardgames.stackexchange.com/questions/2823/what-are-good-strategies-for-deciding-which-expeditions-to-start-in-lost-cities
+1) You want to wait, but you can't wait all that long. Sitting there with half your hand made up of cards that you don't want to play is normally a huge problem in Lost Cities, and you risk giving up a huge amount of tempo to your opponent, in the very small hope of drawing one specific card. Sometimes you just have to quit hoping and start playing - after all, your opponent may have those investment cards in HIS hand! (Of course, holding out can result in the dream scenario - your opponent laying down multiple investment cards for a colour in which you hold a balance of points...)
+
+2) With multiple investment cards? 15 sounds a safe-ish bet. But let's not forget that you can embark on expeditions without investment. I'm perfectly happy to start off expeditions with barely any cards sometimes - just because putting pressure on and psyching out your opponent can easily be worth the potential loss of 10+ points.
+
+3) As above. I certainly would, but I almost certainly wouldn't risk multiplying my losses by 3 or 4 by playing investment cards first!
+
+4) Possibly the most difficult scenario - you don't want to discard high cards and you don't want to play high cards, so what do you do? It can be quite good to bait your opponent by discarding medium-value cards, while holding the higher values so when they snap your discard up, you know they're on a hiding to nothing. But I agree, it's a hard situation to deal with comfortably. (Then again, it's difficult for me to feel much sympathy for someone whose "problem" is being dealt a hand of strong cards! Just play out an 8-9-10 for +7 points, and see what you draw in the meantime: a few investment cards would obviously have been nice to have, but it's not like you've really lost anything, is it?)
+
+
+
+https://lostcitiesvr.com/blog/post/10/developing-mobile-optimized-opponent-ai-lost-cities-vr
+DEVELOPING A MOBILE-OPTIMIZED OPPONENT AI FOR LOST CITIES VR
+August 17, 2015 - 9:50AM
+
+By Landon Butterworth
+
+About a month ago, I started on the task of creating an artificial intelligence system for our Lost Cities VR game. It's a fairly simple game concept compared to many board games, but it provides some unique challenges from an AI perspective.
+
+The game consists of 60 cards, separated into 5 expeditions, or "suits" in classic card game terminology. Each expedition consists of 3 investment cards and the numbers 2-10 for a total of 12 cards in each. The point of the game is to finish the game with a higher score than your opponent. Each player is dealt 8 cards, and points are earned by playing cards on a player's expedition.
+
+Cards must be played in ascending order and the act of playing the first card on a new expedition comes with a cost of -20 points. Cards are worth the value shown on the card with the exception of investment cards, which must be played before any numerical card and act as an incremented multiplier. For example playing 1 investment card at the beginning of an expedition changes it from 1x points to 2x, if you add another investment card it becomes 3x the points with a maximum of 4x points (3 investment cards).
+
+There is an additional bonus if a single player has 8 or more cards played in one expedition, their initial -20 points for that expedition gets wiped out. If you need a better explanation than that, take a few minutes to check out this YouTube video - "Lost Cities Instructions".
+
+If we break the game down to its simplest form and look at it from strictly an AI perspective, we can say that it is an adversarial two player zero-sum game with imperfect information.
+
+GOALS FOR THE AI
+We began by establishing a few goals that we felt were important to the resulting gameplay.
+
+1. IT MUST BE FAIR
+It would have been easy to create a system that has access to all the information related to the game, including what cards were in the pickup pile, the other players hand, etc. But we didn't want users to feel cheated or have a disadvantage beyond how they choose to play their hands.
+
+That being said, we thought an AI with a perfect memory would still be fair. It's not too much of a stretch to memorize every card that has been discarded, or the order they appear in each discard pile, nor is it unlikely that if your opponent picks up a card from a discard pile that any human player would note that action and retain that information to affect their strategy going forward.
+
+2. IT MUST BE CONSISTENT
+We wanted to create an AI system that consistently came up with good scores. Now I know this sounds like a very obvious thing, but there is a balancing act that between the maximum score and the average score. It's very easy to create a system that comes up with a maximum score that blows everything else out of the water but that tends to be more risky, meaning that the minimum score after many games would be as bad as the max score was good (we're talking in the -115 area).
+
+We ended up setting a target average score of 30 points, with a minimum no lower than -20.
+
+3. IT MUST BE ADJUSTABLE
+We wanted to create a system that could be easily adapted for different difficulty levels. Essentially we wanted everything in the system to be affected by changing 2 or 3 values that would allow different weights for different actions. We also wanted to be able to adjust when or even if the AI would play an investment card through tweaking evaluation thresholds.
+
+4. PERSONALITY
+Each person on our team has a very different idea of the best way to approach Lost Cities. For example, Les will often write a whole expedition off early on and start discarding every card that he comes across from that expedition. John waits and waits... and waits for investment cards on an expedition he feels is strong, even if it means throwing out some other valuable cards, Rachael tries very hard to only play a few expeditions but almost always ends up with cards played on all five, and I play almost entirely based on the cards in my hand. If I can get points from an expedition, chances are I've already started playing it.
+
+We wanted to incorporate some of our personal playing styles into the AI system. This could be easily solved by adding in flag variables or additional weights to allow for certain play styles when they are enabled or disabled.
+
+INITIAL THOUGHTS
+The first thing I thought of was a minimax set up. It would actually be expectimax because of the imperfect information and element of randomness.
+
+However, because of the way the game is structured, specifically the initial -20 points when starting a new expedition, evaluating the current utility of the game state cannot be based on a player's actual score. This has implications for some of the greedy algorithms I was looking at using as well.
+
+One thing about Lost Cities that is very interesting is if you have the cards 2, 3, 4, 5, 6 in the same expedition that still only adds up to 20 points, which has a net value of 0.
+
+A human player understands that playing those cards would be a smart move because there is a chance to pick up a 7, 8, 9, or 10 and you are very close to getting the 8 card bonus. But from an AI perspective, playing the first card is -18 points and that's 5 turns (10 ply's) in the negative before seeing any benefit.
+
+In a simulation-based system it is likely that such a move would be pruned from any game tree early on and not even evaluated to see the long term benefit. So we had to come up with an alternative way of evaluating the utility of a player's hand other than score.
+
+MONTE CARLO TREE SEARCH
+This realization led me to a Monte Carlo Tree Search (MCTS) system. MCTS systems are most often used in games with perfect information (games where all the information is available to both players) such as Chess, Checkers, Connect 4, and Go.
+
+But recently this system has been adapted to play games like Poker and Settlers of Catan where very little information is known about the opponent, so I thought this would be a prime candidate for our Lost Cities AI and began diving into research papers covering the topic.
+
+MCTS is a simulation based approach that uses randomness to decide which branch to explore and expand. Typically each simulation would be played out until the end state of the game is reached, but with Lost Cities having a minimum of 22 turns for each player (44 ply's), that's not really feasible.
+
+Also the number of simulations required to get a "good" decision is related to the branching factor of the game tree since randomness is involved to increase the possibility of every option being explored, you must increase the number of simulations or make the pruning algorithm more aggressive.
+
+Here is where we hit an impasse: This all has to be done in the background, on a mobile phone, while continuing to render the game at 60 FPS.
+
+To see any real benefit from a Monte Carlo style simulation for a game like Lost Cities you need to run around 350 simulations, and as I mentioned earlier, those simulations have to go at least 5 turns deep (10 ply's).
+
+While this isn't impossible, the delay in game play caused by these simulations would undoubtedly cause some players to get frustrated and quit playing, and increasing the aggressiveness of the pruning often eliminates what would turn out to be the best move.
+
+HER NAME IS GWEN, AND SHE IS BEAUTIFUL...
+In the end, we were forced to move away from the Monte Carlo Tree Search method in favour of a more efficient but "dumber" method that I have affectionately named Gwen.
+
+I came up with a general strategy evaluation function that performs consistently well at a very low cost. She follows my playing style very closely by evaluating each expedition in her hand separately and comparing the results. She uses an investment threshold to ensure she will not play an investment card on an expedition that returns a value lower than the threshold and a play threshold to play an expedition without an investment card.
+
+There are quite a few extras to the method and a bunch of edge cases surrounding it, but the core function came down to this:
+
+result += (
+    (
+        result
+        * (
+            number of cards higher than the current card
+            + 1
+            – number of cards higher that are visible
+        )
+    )
+    / (cards remaining * 2)
+    * average value of numeric cards in same expedition
+)
+The result generated by this equation determines when it is appropriate to start an expedition and whether or not to play an investment card on it. It executes this calculation for each card in each expedition starting with the lowest and working its way up. The result is obviously cumulative.
+
+The importance of this is that it accounts for the number of potential cards remaining in the pickup pile that are higher than the card being evaluated.
+
+Outside of this initial decision, we also maintain "to play" and "to play next" lists that track which cards are left to play before the game is over and which cards should be played on the next available play, respectively.
+
+If you have played a yellow 5 and you have a yellow 8 in your hand and you can see your opponent has played a yellow 6 and 7, the yellow 8 should be the card you play next. There is nothing that you can possibly pick up that would make that a bad play.
+
+It also compares the number of items in these lists with the number of cards left. If there are less cards left than 2x the number of items in the list (meaning there are less turns left than cards left to play), it will pick up any card from the discard piles to extend the gameplay.
+
+We don't want to give everything that's happening behind the scenes away, but we want to give you a little insight into the development process and the thought that went into making a robust and intelligent system.
+
+CREATING MULTIPLE AI PERSONALITIES
+As I stated earlier, one of our goals was to have different personalities for the AI to create a different experience depending on which character you're facing. All of the different personalities will use this core equation to calculate the utility of each expedition, but depending on a few flag variables that information could be handled very differently.
+
+For example, John's play style is to wait for as many investment cards on a high scoring expedition before playing. For that personality we simply set the flag "waitForInvestment" and try to play the expedition with the 2nd highest utility (if it is above the play threshold of course). That will continue while there is something else playable or if there is a safe discard available (meaning it won't benefit the opponent or be detrimental to the AI).
+
+To create Les's play style we simply mark an expedition early on as a throw away and stop evaluating that expedition. We're still figuring out which personalities to ship with, because based on the early experiments the average score drops in both of the above cases, but for the overall player experience and storyline they might just add that extra little something to the gameplay. We won't know for sure until we do more outside play testing.
+
+CONCLUSION
+While we're not finished with the AI yet, this is where we stand now after about a month of R&D. I am still holding out hope that we will be able to come up with a more efficient way of using the Monte Carlo system. Maybe we will be able to find a balance between efficiency and intelligence that will work on mobile devices.
+
+As we start working on the menu system, audio, models, graphics, and animations, it will remain in the back of our minds and whenever there is a break in these other areas, we will keep improving the AI until we're completely happy with our final solution.

@@ -1,100 +1,11 @@
 #colors 1-5, will 
-from enum import Enum
 import sys
-import random
 import ai
-class Color(Enum):
-  DISCARD = 0
-  RED = 1
-  WHITE = 2
-  YELLOW = 3
-  GREEN = 4
-  BLUE = 5
-class Card:
-  def __init__(self,color,value):
-    self.color = color
-    self.value = value
-  #def colorNumToStr(self,Color):
-  #  if Color == 1:
-  #    return ""
-  def show(self):
-    if self.value==1:
-      print "{}:{}".format(Color(self.color).name,"HS")
-    else:
-      print "{}:{}".format(Color(self.color).name,self.value)
-  def __str__(self):
-    if self.value == 1:
-      return "{}:{}".format(Color(self.color).name,"HS")
-    return "{}:{}".format(Color(self.color).name,self.value)
-  def __eq__(self, other):
-    """Overrides the default implementation"""
-    if isinstance(other, Card):
-        return self.color == other.color and self.value == other.value
-    return False
-  def __ne__(self, other):
-    """Overrides the default implementation"""
-    return not self.__eq__(other)
+from cards import Card
+from cards import Deck
+from cards import Color
+from strategy import *
 
-class Deck:
-  def __init__(self):
-    self.cards = []
-   # self.build()
-  
-  def sortDeck(self):
-    self.cards.sort()
-  def build(self):
-    for color in range(1,6):
-      for value in range(1,11):  #we're using 1 as the special handshake value
-        self.cards.append(Card(color,value))
-        if value==1: ##need 3 handshakes
-          self.cards.append(Card(color,value))
-          self.cards.append(Card(color,value))
-
-  def insertCard(self,card):
-    self.cards.append(card)
-  def deleteCard(self,card):
-    if self.hasCard(card)==False:
-      raise Exception("can't delete card i dont have!")
-    else:
-      for val in self.cards:
-        if val == card:
-          self.cards.remove(val)
-          break
- #get the sum of the values for a specific color (count HS as 0)
-  def getColorSum(self,color):
-    thesum = 0
-    for x in self.cards:
-      if x.color == color:
-        if x.value != 1:
-          thesum+=x.value
-    return thesum
-  def revealAll(self):
-    for j in self.cards:
-      j.show()
-  def revealSorted(self):
-    for color in range (1,6):
-      for number in range(1,11,1):
-        card = Card(Color(color).value,number)
-        if self.hasCard(card):
-          card.show()
-  def shuffle(self):
-    for i in range(len(self.cards)-1,0,-1):
-      r = random.randint(0,i)
-      self.cards[i],self.cards[r] = self.cards[r],self.cards[i]
-  def hasCard(self,card):
-    for x in self.cards:
-      if x == card:
-        return True
-    return False
-    #used for counting number of handshakes
-  def countCard(self,card):
-    count=0
-    for x in self.cards:
-      if x == card:
-        count+=1
-    return count
-  def __len__(self):
-    return len(self.cards)
 def printGameBoard(communityDecks):
   P1Deck = communityDecks['P1']
   P2Deck = communityDecks['P2']
@@ -317,14 +228,7 @@ def getMove(playerName,playerHand,communityDeck):
   color,discard=getFullMove(playerName,playerHand,communityDeck)
   getDraw(playerName,playerHand,communityDeck,color,discard)
   return
- 
- #check all the colors in a deck and determine the highest sum
-def getBestColor(deck):
-  return 0
-  #for color in range(1,6):
 
-
-  
 
 def scoreDeck(deck):
   scores = dict()
@@ -357,7 +261,6 @@ def scoreDeck(deck):
   return totalScore
 
 def printGameSummary(deck):
-  pass
   P1Score=scoreDeck(deck['P1'])
   P2Score = scoreDeck(deck['P2'])
   print P1Score
@@ -417,6 +320,16 @@ def simulateAGame():
   return printGameSummary(community)
 
 def main():
+  P1 = Deck()
+  for x in range(1,10):
+    card = Card(2,x)
+    P1.insertCard(card)
+  for x in range(1,8):
+    P1.insertCard(Card(3,x))
+  for x in range(7,10):
+    P1.insertCard(Card(4,x))  
+  print getColorDict(P1)
+  return
   P1Wins = 0
   P2Wins = 0
   P1CumulativeScore = 0
